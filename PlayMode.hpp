@@ -44,7 +44,7 @@ struct PlayMode : Mode {
 	//game variables:
 	// holds 0 by default, 1 if player 1 (red) placed it, 2 if player 2 (blue) placed it
 	bool isP1Turn = true;
-	int board[4][4][4];
+	int board[4][4][4] = {0};
 	int activeRed = 0;
 	int activeBlue = 0;
 	Scene::Drawable *redBalls[32];

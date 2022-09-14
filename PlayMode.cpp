@@ -78,23 +78,29 @@ PlayMode::~PlayMode() {
 
 void PlayMode::place_ball(uint8_t x, uint8_t y) {
 
+	printf("%u", board[3][y][x]);
+	std::cout << "" << std::endl;
 	if (board[3][y][x] == 0) {
 		if (isP1Turn) {
 			// place red ball at highest z
 			isP1Turn = false;
 			if (board[0][y][x] == 0) {
+		std::cout << "0" << std::endl;
 				board[0][y][x] = 1;
 				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 1, -3 + 2 * y);
 				activeRed++;
 			} else if (board[1][y][x] == 0) {
+		std::cout << "1" << std::endl;
 				board[1][y][x] = 1;
 				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 3, -3 + 2 * y);
 				activeRed++;
 			} else if (board[2][y][x] == 0) {
+		std::cout << "2" << std::endl;
 				board[2][y][x] = 1;
 				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 5, -3 + 2 * y);
 				activeRed++;
 			} else if (board[3][y][x] == 0) {
+		std::cout << "3" << std::endl;
 				board[3][y][x] = 1;
 				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 7, -3 + 2 * y);
 				activeRed++;
@@ -103,18 +109,22 @@ void PlayMode::place_ball(uint8_t x, uint8_t y) {
 			// place blue ball at highest z
 			isP1Turn = true;
 			if (board[0][y][x] == 0) {
+		std::cout << "0" << std::endl;
 				board[0][y][x] = 1;
 				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 1, -3 + 2 * y);
 				activeBlue++;
 			} else if (board[1][y][x] == 0) {
+		std::cout << "1" << std::endl;
 				board[1][y][x] = 1;
 				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 3, -3 + 2 * y);
 				activeBlue++;
 			} else if (board[2][y][x] == 0) {
+		std::cout << "2" << std::endl;
 				board[2][y][x] = 1;
 				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 5, -3 + 2 * y);
 				activeBlue++;
 			} else if (board[3][y][x] == 0) {
+		std::cout << "3" << std::endl;
 				board[3][y][x] = 1;
 				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 7, -3 + 2 * y);
 				activeBlue++;
@@ -154,10 +164,10 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			zDown.pressed = true;
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_v) {
-			place_ball(3, 3);
+			place_ball(0, 0);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_b) {
-			place_ball(0, 0);
+			place_ball(1, 1);
 			return true;
 		}
 	} else if (evt.type == SDL_KEYUP) {
