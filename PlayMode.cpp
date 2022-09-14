@@ -12,51 +12,115 @@
 
 #include <random>
 
-GLuint hexapod_meshes_for_lit_color_texture_program = 0;
-Load< MeshBuffer > hexapod_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer const *ret = new MeshBuffer(data_path("hexapod.pnct"));
-	hexapod_meshes_for_lit_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
+GLuint meshes_for_lit_color_texture_program = 0;
+Load< MeshBuffer > main_meshes(LoadTagDefault, []() -> MeshBuffer const * {
+	MeshBuffer const *ret = new MeshBuffer(data_path("connectBoard.pnct"));
+	meshes_for_lit_color_texture_program = ret->make_vao_for_program(lit_color_texture_program->program);
 	return ret;
 });
 
-Load< Scene > hexapod_scene(LoadTagDefault, []() -> Scene const * {
-	return new Scene(data_path("hexapod.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
-		Mesh const &mesh = hexapod_meshes->lookup(mesh_name);
+Load< Scene > main_scene(LoadTagDefault, []() -> Scene const * {
+	return new Scene(data_path("connectBoard.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
+		Mesh const &mesh = main_meshes->lookup(mesh_name);
 
-		scene.drawables.emplace_back(transform);
-		Scene::Drawable &drawable = scene.drawables.back();
+		if (transform->name == "BlueSphere" || transform->name == "RedSphere") {
+			// make copies of each sphere
+			for (uint8_t i = 0; i < 32; i++) {
+				scene.drawables.emplace_back(transform);
+				Scene::Drawable &drawable = scene.drawables.back();
 
-		drawable.pipeline = lit_color_texture_program_pipeline;
+				drawable.pipeline = lit_color_texture_program_pipeline;
 
-		drawable.pipeline.vao = hexapod_meshes_for_lit_color_texture_program;
-		drawable.pipeline.type = mesh.type;
-		drawable.pipeline.start = mesh.start;
-		drawable.pipeline.count = mesh.count;
+				drawable.pipeline.vao = meshes_for_lit_color_texture_program;
+				drawable.pipeline.type = mesh.type;
+				drawable.pipeline.start = mesh.start;
+				drawable.pipeline.count = mesh.count;
+			}
+		}
+		else {
+			scene.drawables.emplace_back(transform);
+			Scene::Drawable &drawable = scene.drawables.back();
+
+			drawable.pipeline = lit_color_texture_program_pipeline;
+
+			drawable.pipeline.vao = meshes_for_lit_color_texture_program;
+			drawable.pipeline.type = mesh.type;
+			drawable.pipeline.start = mesh.start;
+			drawable.pipeline.count = mesh.count;
+		}
 
 	});
 });
 
-PlayMode::PlayMode() : scene(*hexapod_scene) {
-	//get pointers to leg for convenience:
-	for (auto &transform : scene.transforms) {
-		if (transform.name == "Hip.FL") hip = &transform;
-		else if (transform.name == "UpperLeg.FL") upper_leg = &transform;
-		else if (transform.name == "LowerLeg.FL") lower_leg = &transform;
+PlayMode::PlayMode() : scene(*main_scene) {
+
+	for (auto &drawable : scene.drawables) {
+		if (drawable.transform->name == "BlueSphere") {
+			blueBalls[activeBlue] = &drawable;
+			activeBlue++;
+		}
+		else if (drawable.transform->name == "RedSphere") {
+			redBalls[activeRed] = &drawable;
+			activeRed++;
+		}
 	}
-	if (hip == nullptr) throw std::runtime_error("Hip not found.");
-	if (upper_leg == nullptr) throw std::runtime_error("Upper leg not found.");
-	if (lower_leg == nullptr) throw std::runtime_error("Lower leg not found.");
+	
+	activeRed = 0;
+	activeBlue = 0;
 
-	hip_base_rotation = hip->rotation;
-	upper_leg_base_rotation = upper_leg->rotation;
-	lower_leg_base_rotation = lower_leg->rotation;
-
-	//get pointer to camera for convenience:
+	// //get pointer to camera for convenience:
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
 }
 
 PlayMode::~PlayMode() {
+}
+
+void PlayMode::place_ball(uint8_t x, uint8_t y) {
+
+	if (board[3][y][x] == 0) {
+		if (isP1Turn) {
+			// place red ball at highest z
+			isP1Turn = false;
+			if (board[0][y][x] == 0) {
+				board[0][y][x] = 1;
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 1, -3 + 2 * y);
+				activeRed++;
+			} else if (board[1][y][x] == 0) {
+				board[1][y][x] = 1;
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 3, -3 + 2 * y);
+				activeRed++;
+			} else if (board[2][y][x] == 0) {
+				board[2][y][x] = 1;
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 5, -3 + 2 * y);
+				activeRed++;
+			} else if (board[3][y][x] == 0) {
+				board[3][y][x] = 1;
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 7, -3 + 2 * y);
+				activeRed++;
+			}
+		} else {
+			// place blue ball at highest z
+			isP1Turn = true;
+			if (board[0][y][x] == 0) {
+				board[0][y][x] = 1;
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 1, -3 + 2 * y);
+				activeBlue++;
+			} else if (board[1][y][x] == 0) {
+				board[1][y][x] = 1;
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 3, -3 + 2 * y);
+				activeBlue++;
+			} else if (board[2][y][x] == 0) {
+				board[2][y][x] = 1;
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 5, -3 + 2 * y);
+				activeBlue++;
+			} else if (board[3][y][x] == 0) {
+				board[3][y][x] = 1;
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 7, -3 + 2 * y);
+				activeBlue++;
+			}
+		}
+	}
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -81,6 +145,20 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			down.downs += 1;
 			down.pressed = true;
 			return true;
+		} else if (evt.key.keysym.sym == SDLK_e) {
+			zUp.downs += 1;
+			zUp.pressed = true;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_q) {
+			zDown.downs += 1;
+			zDown.pressed = true;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_v) {
+			place_ball(3, 3);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_b) {
+			place_ball(0, 0);
+			return true;
 		}
 	} else if (evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
@@ -94,6 +172,12 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_s) {
 			down.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_e) {
+			zUp.pressed = false;
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_q) {
+			zDown.pressed = false;
 			return true;
 		}
 	} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
@@ -121,43 +205,29 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 
 void PlayMode::update(float elapsed) {
 
-	//slowly rotates through [0,1):
-	wobble += elapsed / 10.0f;
-	wobble -= std::floor(wobble);
-
-	hip->rotation = hip_base_rotation * glm::angleAxis(
-		glm::radians(5.0f * std::sin(wobble * 2.0f * float(M_PI))),
-		glm::vec3(0.0f, 1.0f, 0.0f)
-	);
-	upper_leg->rotation = upper_leg_base_rotation * glm::angleAxis(
-		glm::radians(7.0f * std::sin(wobble * 2.0f * 2.0f * float(M_PI))),
-		glm::vec3(0.0f, 0.0f, 1.0f)
-	);
-	lower_leg->rotation = lower_leg_base_rotation * glm::angleAxis(
-		glm::radians(10.0f * std::sin(wobble * 3.0f * 2.0f * float(M_PI))),
-		glm::vec3(0.0f, 0.0f, 1.0f)
-	);
-
 	//move camera:
 	{
 
 		//combine inputs into a move:
-		constexpr float PlayerSpeed = 30.0f;
-		glm::vec2 move = glm::vec2(0.0f);
+		constexpr float PlayerSpeed = 20.0f;
+		glm::vec3 move = glm::vec3(0.0f);
 		if (left.pressed && !right.pressed) move.x =-1.0f;
 		if (!left.pressed && right.pressed) move.x = 1.0f;
 		if (down.pressed && !up.pressed) move.y =-1.0f;
 		if (!down.pressed && up.pressed) move.y = 1.0f;
+		if (zDown.pressed && !zUp.pressed) move.z =-1.0f;
+		if (!zDown.pressed && zUp.pressed) move.z = 1.0f;
 
 		//make it so that moving diagonally doesn't go faster:
-		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
+		if (move != glm::vec3(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
 
-		glm::mat4x3 frame = camera->transform->make_local_to_parent();
-		glm::vec3 frame_right = frame[0];
-		//glm::vec3 up = frame[1];
-		glm::vec3 frame_forward = -frame[2];
+		//glm::mat4x3 frame = camera->transform->make_local_to_parent();
+		glm::vec3 frame_right = glm::vec3(-1.0f, 0.0f, 0.0f);
+		glm::vec3 frame_forward = glm::vec3(0.0f, -1.0f, 0.0f);
+		glm::vec3 frame_up = glm::vec3(0.0f, 0.0f, 1.0f);
 
-		camera->transform->position += move.x * frame_right + move.y * frame_forward;
+		camera->transform->position += move.x * frame_right + move.y * frame_forward + 
+									((zDown.pressed && camera->transform->position.z <= 1.0f) ? 0 : move.z) * frame_up;
 	}
 
 	//reset button press counters:

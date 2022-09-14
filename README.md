@@ -1,8 +1,8 @@
-# (TODO: your game's title)
+# Coonect 4! (Factorial!)
 
 Author: Alan Lee / soohyun3
 
-Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
+Design: This is Connect 4 factorial! This is a reimagination of Connect (4) in (3) dimensions with (2) people and (1) winner!
 
 Screen Shot:
 
