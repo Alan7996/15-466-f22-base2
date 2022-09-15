@@ -38,6 +38,15 @@ Load< Scene > main_scene(LoadTagDefault, []() -> Scene const * {
 
 PlayMode::PlayMode() : scene(*main_scene) {
 
+	gameState = PLAYING;
+
+	for (auto &transform : scene.transforms) {
+		if (transform.name == "Cone") arrow = &transform;
+		else if (transform.name == "Text") text = &transform;
+	}
+	arrow_rotation = arrow->rotation;
+	text_rotation = text->rotation;
+
 	for (auto &drawable : scene.drawables) {
 		if (drawable.transform->name.find("BlueSphere") != std::string::npos) {
 			blueBalls.emplace_back(&drawable);
@@ -61,54 +70,71 @@ PlayMode::~PlayMode() {
 
 void PlayMode::place_ball(uint8_t x, uint8_t y) {
 
+	int res = 0;
 	if (board[3][y][x] == 0) {
 		if (isP1Turn) {
 			// place red ball at highest z
 			isP1Turn = false;
-			if (board[0][y][x] == 0) {
-				board[0][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 1);
-				activeRed++;
-			} else if (board[1][y][x] == 0) {
-				board[1][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 3);
-				activeRed++;
-			} else if (board[2][y][x] == 0) {
-				board[2][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 5);
-				activeRed++;
-			} else if (board[3][y][x] == 0) {
-				board[3][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 7);
-				activeRed++;
+			for (uint8_t z = 0; z < 4; z++) {
+				if(board[z][y][x] == 0) {
+					board[z][y][x] = 1;
+					redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 1 + 2 * z);
+
+					board[4][y][x] += 1;
+					board[z][4][x] += 1;
+					board[z][y][4] += 1;
+
+					activeRed++;
+
+					res = check_win(x, y, z, 1);
+
+					break;
+				}
 			}
 		} else {
 			// place blue ball at highest z
 			isP1Turn = true;
-			if (board[0][y][x] == 0) {
-				board[0][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 1);
-				activeBlue++;
-			} else if (board[1][y][x] == 0) {
-				board[1][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 3);
-				activeBlue++;
-			} else if (board[2][y][x] == 0) {
-				board[2][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 5);
-				activeBlue++;
-			} else if (board[3][y][x] == 0) {
-				board[3][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 7);
-				activeBlue++;
+			for (uint8_t z = 0; z < 4; z++) {
+				if(board[z][y][x] == 0) {
+					board[z][y][x] = -1;
+					blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 1 + 2 * z);
+
+					board[4][y][x] -= 1;
+					board[z][4][x] -= 1;
+					board[z][y][4] -= 1;
+					
+					activeBlue++;
+
+					res = check_win(x, y, z, -1);
+
+					break;
+				}
 			}
 		}
 	}
-	check_win();
+
+	if (res != 0) {
+		didP1Win = (res == 1) ? true : false;
+		gameState = GAMEOVER;
+	}
 }
 
-void PlayMode::check_win() {
-
+int PlayMode::check_win(int x, int y, int z, int player) {
+	
+	if (player == 1) {
+		if (board[4][y][x] == 4 || board[z][4][x] == 4 || board[z][y][4] == 4) {
+			// red wins
+			return 1;
+		}
+	}
+	else {
+		if (board[4][y][x] == -4 || board[z][4][x] == -4 || board[z][y][4] == -4) {
+			// blue wins
+			return -1;
+		}
+	}
+	// no winner yet
+	return 0;
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -117,83 +143,85 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		if (evt.key.keysym.sym == SDLK_ESCAPE) {
 			SDL_SetRelativeMouseMode(SDL_FALSE);
 			return true;
-		} else if (evt.key.keysym.sym == SDLK_a) {
-			left.downs += 1;
-			left.pressed = true;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_d) {
-			right.downs += 1;
-			right.pressed = true;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_w) {
-			up.downs += 1;
-			up.pressed = true;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_s) {
-			down.downs += 1;
-			down.pressed = true;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_e) {
-			zUp.downs += 1;
-			zUp.pressed = true;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_q) {
-			zDown.downs += 1;
-			zDown.pressed = true;
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_v) {
-			place_ball(0, 0);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_b) {
-			place_ball(1, 0);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_n) {
-			place_ball(2, 0);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_m) {
-			place_ball(3, 0);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_g) {
-			place_ball(0, 1);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_h) {
-			place_ball(1, 1);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_j) {
-			place_ball(2, 1);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_k) {
-			place_ball(3, 1);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_y) {
-			place_ball(0, 2);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_u) {
-			place_ball(1, 2);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_i) {
-			place_ball(2, 2);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_o) {
-			place_ball(3, 2);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_7) {
-			place_ball(0, 3);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_8) {
-			place_ball(1, 3);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_9) {
-			place_ball(2, 3);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_0) {
-			place_ball(3, 3);
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_SPACE) {
-			camera->transform->rotation = initCam;
-			return true;
+		} else if (gameState == PLAYING) {
+			if (evt.key.keysym.sym == SDLK_a) {
+				left.downs += 1;
+				left.pressed = true;
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_d) {
+				right.downs += 1;
+				right.pressed = true;
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_w) {
+				up.downs += 1;
+				up.pressed = true;
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_s) {
+				down.downs += 1;
+				down.pressed = true;
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_e) {
+				zUp.downs += 1;
+				zUp.pressed = true;
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_q) {
+				zDown.downs += 1;
+				zDown.pressed = true;
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_v) {
+				place_ball(0, 0);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_b) {
+				place_ball(1, 0);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_n) {
+				place_ball(2, 0);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_m) {
+				place_ball(3, 0);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_g) {
+				place_ball(0, 1);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_h) {
+				place_ball(1, 1);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_j) {
+				place_ball(2, 1);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_k) {
+				place_ball(3, 1);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_y) {
+				place_ball(0, 2);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_u) {
+				place_ball(1, 2);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_i) {
+				place_ball(2, 2);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_o) {
+				place_ball(3, 2);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_7) {
+				place_ball(0, 3);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_8) {
+				place_ball(1, 3);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_9) {
+				place_ball(2, 3);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_0) {
+				place_ball(3, 3);
+				return true;
+			} else if (evt.key.keysym.sym == SDLK_SPACE) {
+				camera->transform->rotation = initCam;
+				return true;
+			}
 		}
-	} else if (evt.type == SDL_KEYUP) {
+	} else if (gameState == PLAYING && evt.type == SDL_KEYUP) {
 		if (evt.key.keysym.sym == SDLK_a) {
 			left.pressed = false;
 			return true;
@@ -237,6 +265,28 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
+
+	if (gameState != PLAYING) return;
+
+	//slowly rotates through [0,1):
+	wobble += elapsed / 10.0f;
+	wobble -= std::floor(wobble);
+
+	arrow->rotation = arrow_rotation * glm::angleAxis(
+		glm::radians(5.0f * std::sin(wobble * 2.0f * float(M_PI))),
+		glm::vec3(0.0f, 1.0f, 0.0f)
+	) * glm::angleAxis(
+		glm::radians(5.0f * std::cos(wobble * 2.0f * float(M_PI))),
+		glm::vec3(1.0f, 0.0f, 0.0f)
+	);
+
+	text->rotation = text_rotation * glm::angleAxis(
+		glm::radians(5.0f * std::sin(wobble * 2.0f * float(M_PI))),
+		glm::vec3(0.0f, 1.0f, 0.0f)
+	) * glm::angleAxis(
+		glm::radians(5.0f * std::cos(wobble * 2.0f * float(M_PI))),
+		glm::vec3(1.0f, 0.0f, 0.0f)
+	);
 
 	//move camera:
 	{
@@ -315,5 +365,27 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+
+		if (gameState == GAMEOVER) {
+			if (didP1Win) {
+				lines.draw_text("Red player wins!",
+					glm::vec3(-aspect + 5.0f * H, -1.0 + 10.0f * H, 0.0),
+					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+					glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+				lines.draw_text("Red player wins!",
+					glm::vec3(-aspect + 5.0f * H + ofs, -1.0 + + 10.0f * H + ofs, 0.0),
+					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+					glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+			} else {
+				lines.draw_text("Blue player wins!",
+					glm::vec3(-aspect + 5.0f * H, -1.0 + 10.0f * H, 0.0),
+					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+					glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+				lines.draw_text("Blue player wins!",
+					glm::vec3(-aspect + 5.0f * H + ofs, -1.0 + + 10.0f * H + ofs, 0.0),
+					glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+					glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+			}
+		}
 	}
 }

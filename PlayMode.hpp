@@ -17,9 +17,13 @@ struct PlayMode : Mode {
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
 	void place_ball(uint8_t x, uint8_t y);
-	void check_win();
+	int PlayMode::check_win(int x, int y, int z, int player);
 
 	//----- game state -----
+	enum GameState {
+		PLAYING,
+		GAMEOVER,
+	} gameState;
 
 	//input tracking:
 	struct Button {
@@ -31,12 +35,10 @@ struct PlayMode : Mode {
 	Scene scene;
 
 	//hexapod leg to wobble:
-	Scene::Transform *hip = nullptr;
-	Scene::Transform *upper_leg = nullptr;
-	Scene::Transform *lower_leg = nullptr;
-	glm::quat hip_base_rotation;
-	glm::quat upper_leg_base_rotation;
-	glm::quat lower_leg_base_rotation;
+	Scene::Transform *arrow = nullptr;
+	glm::quat arrow_rotation;
+	Scene::Transform *text = nullptr;
+	glm::quat text_rotation;
 	float wobble = 0.0f;
 	
 	//camera:
@@ -46,7 +48,10 @@ struct PlayMode : Mode {
 	//game variables:
 	// holds 0 by default, 1 if player 1 (red) placed it, 2 if player 2 (blue) placed it
 	bool isP1Turn = true;
-	int board[4][4][4] = {0};
+	bool didP1Win = false;
+	// the board is 5x5x5 to keep the last 1 entries of each dimension as a way of tracking win state
+	// each red ball is +1, and blue ball is -1. if ever these entries become + or - 4 the corresponding player wins
+	int board[5][5][5] = {0};
 	int activeRed = 0;
 	int activeBlue = 0;
 	std::vector<Scene::Drawable *> redBalls;
