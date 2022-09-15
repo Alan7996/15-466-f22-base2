@@ -23,31 +23,15 @@ Load< Scene > main_scene(LoadTagDefault, []() -> Scene const * {
 	return new Scene(data_path("connectBoard.scene"), [&](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
 		Mesh const &mesh = main_meshes->lookup(mesh_name);
 
-		if (transform->name == "BlueSphere" || transform->name == "RedSphere") {
-			// make copies of each sphere
-			for (uint8_t i = 0; i < 32; i++) {
-				scene.drawables.emplace_back(transform);
-				Scene::Drawable &drawable = scene.drawables.back();
+		scene.drawables.emplace_back(transform);
+		Scene::Drawable &drawable = scene.drawables.back();
 
-				drawable.pipeline = lit_color_texture_program_pipeline;
+		drawable.pipeline = lit_color_texture_program_pipeline;
 
-				drawable.pipeline.vao = meshes_for_lit_color_texture_program;
-				drawable.pipeline.type = mesh.type;
-				drawable.pipeline.start = mesh.start;
-				drawable.pipeline.count = mesh.count;
-			}
-		}
-		else {
-			scene.drawables.emplace_back(transform);
-			Scene::Drawable &drawable = scene.drawables.back();
-
-			drawable.pipeline = lit_color_texture_program_pipeline;
-
-			drawable.pipeline.vao = meshes_for_lit_color_texture_program;
-			drawable.pipeline.type = mesh.type;
-			drawable.pipeline.start = mesh.start;
-			drawable.pipeline.count = mesh.count;
-		}
+		drawable.pipeline.vao = meshes_for_lit_color_texture_program;
+		drawable.pipeline.type = mesh.type;
+		drawable.pipeline.start = mesh.start;
+		drawable.pipeline.count = mesh.count;
 
 	});
 });
@@ -55,13 +39,11 @@ Load< Scene > main_scene(LoadTagDefault, []() -> Scene const * {
 PlayMode::PlayMode() : scene(*main_scene) {
 
 	for (auto &drawable : scene.drawables) {
-		if (drawable.transform->name == "BlueSphere") {
-			blueBalls[activeBlue] = &drawable;
-			activeBlue++;
+		if (drawable.transform->name.find("BlueSphere") != std::string::npos) {
+			blueBalls.emplace_back(&drawable);
 		}
-		else if (drawable.transform->name == "RedSphere") {
-			redBalls[activeRed] = &drawable;
-			activeRed++;
+		else if (drawable.transform->name.find("RedSphere") != std::string::npos) {
+			redBalls.emplace_back(&drawable);
 		}
 	}
 	
@@ -71,6 +53,7 @@ PlayMode::PlayMode() : scene(*main_scene) {
 	// //get pointer to camera for convenience:
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
+	initCam = camera->transform->rotation;
 }
 
 PlayMode::~PlayMode() {
@@ -78,55 +61,45 @@ PlayMode::~PlayMode() {
 
 void PlayMode::place_ball(uint8_t x, uint8_t y) {
 
-	printf("%u", board[3][y][x]);
-	std::cout << "" << std::endl;
 	if (board[3][y][x] == 0) {
 		if (isP1Turn) {
 			// place red ball at highest z
 			isP1Turn = false;
 			if (board[0][y][x] == 0) {
-		std::cout << "0" << std::endl;
 				board[0][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 1, -3 + 2 * y);
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 1);
 				activeRed++;
 			} else if (board[1][y][x] == 0) {
-		std::cout << "1" << std::endl;
 				board[1][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 3, -3 + 2 * y);
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 3);
 				activeRed++;
 			} else if (board[2][y][x] == 0) {
-		std::cout << "2" << std::endl;
 				board[2][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 5, -3 + 2 * y);
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 5);
 				activeRed++;
 			} else if (board[3][y][x] == 0) {
-		std::cout << "3" << std::endl;
 				board[3][y][x] = 1;
-				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, 7, -3 + 2 * y);
+				redBalls[activeRed]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 7);
 				activeRed++;
 			}
 		} else {
 			// place blue ball at highest z
 			isP1Turn = true;
 			if (board[0][y][x] == 0) {
-		std::cout << "0" << std::endl;
 				board[0][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 1, -3 + 2 * y);
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 1);
 				activeBlue++;
 			} else if (board[1][y][x] == 0) {
-		std::cout << "1" << std::endl;
 				board[1][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 3, -3 + 2 * y);
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 3);
 				activeBlue++;
 			} else if (board[2][y][x] == 0) {
-		std::cout << "2" << std::endl;
 				board[2][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 5, -3 + 2 * y);
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 5);
 				activeBlue++;
 			} else if (board[3][y][x] == 0) {
-		std::cout << "3" << std::endl;
 				board[3][y][x] = 1;
-				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, 7, -3 + 2 * y);
+				blueBalls[activeBlue]->transform->position = glm::vec3(-3 + 2 * x, -3 + 2 * y, 7);
 				activeBlue++;
 			}
 		}
@@ -167,7 +140,52 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			place_ball(0, 0);
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_b) {
+			place_ball(1, 0);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_n) {
+			place_ball(2, 0);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_m) {
+			place_ball(3, 0);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_g) {
+			place_ball(0, 1);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_h) {
 			place_ball(1, 1);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_j) {
+			place_ball(2, 1);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_k) {
+			place_ball(3, 1);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_y) {
+			place_ball(0, 2);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_u) {
+			place_ball(1, 2);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_i) {
+			place_ball(2, 2);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_o) {
+			place_ball(3, 2);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_7) {
+			place_ball(0, 3);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_8) {
+			place_ball(1, 3);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_9) {
+			place_ball(2, 3);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_0) {
+			place_ball(3, 3);
+			return true;
+		} else if (evt.key.keysym.sym == SDLK_SPACE) {
+			camera->transform->rotation = initCam;
 			return true;
 		}
 	} else if (evt.type == SDL_KEYUP) {
@@ -221,10 +239,10 @@ void PlayMode::update(float elapsed) {
 		//combine inputs into a move:
 		constexpr float PlayerSpeed = 20.0f;
 		glm::vec3 move = glm::vec3(0.0f);
-		if (left.pressed && !right.pressed) move.x =-1.0f;
-		if (!left.pressed && right.pressed) move.x = 1.0f;
-		if (down.pressed && !up.pressed) move.y =-1.0f;
-		if (!down.pressed && up.pressed) move.y = 1.0f;
+		if (left.pressed && !right.pressed) move.x = 1.0f;
+		if (!left.pressed && right.pressed) move.x =-1.0f;
+		if (down.pressed && !up.pressed) move.y = 1.0f;
+		if (!down.pressed && up.pressed) move.y =-1.0f;
 		if (zDown.pressed && !zUp.pressed) move.z =-1.0f;
 		if (!zDown.pressed && zUp.pressed) move.z = 1.0f;
 
@@ -236,7 +254,9 @@ void PlayMode::update(float elapsed) {
 		glm::vec3 frame_forward = glm::vec3(0.0f, -1.0f, 0.0f);
 		glm::vec3 frame_up = glm::vec3(0.0f, 0.0f, 1.0f);
 
-		camera->transform->position += move.x * frame_right + move.y * frame_forward + 
+		camera->transform->position += 
+									((left.pressed && camera->transform->position.x <= -30.0f) ? 0 : (right.pressed && camera->transform->position.x >= 30.0f) ? 0 : move.x) * frame_right + 
+									((down.pressed && camera->transform->position.y <= -30.0f) ? 0 : (up.pressed && camera->transform->position.y >= 30.0f) ? 0 : move.y) * frame_forward + 
 									((zDown.pressed && camera->transform->position.z <= 1.0f) ? 0 : move.z) * frame_up;
 	}
 
@@ -280,15 +300,15 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
 
-		constexpr float H = 0.09f;
-		lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
-			glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
-			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-			glm::u8vec4(0x00, 0x00, 0x00, 0x00));
-		float ofs = 2.0f / drawable_size.y;
-		lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
-			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
-			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+		// constexpr float H = 0.09f;
+		// lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
+		// 	glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
+		// 	glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+		// 	glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+		// float ofs = 2.0f / drawable_size.y;
+		// lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
+		// 	glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
+		// 	glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+		// 	glm::u8vec4(0xff, 0xff, 0xff, 0x00));
 	}
 }

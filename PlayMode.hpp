@@ -40,6 +40,7 @@ struct PlayMode : Mode {
 	
 	//camera:
 	Scene::Camera *camera = nullptr;
+	glm::quat initCam;
 
 	//game variables:
 	// holds 0 by default, 1 if player 1 (red) placed it, 2 if player 2 (blue) placed it
@@ -47,7 +48,7 @@ struct PlayMode : Mode {
 	int board[4][4][4] = {0};
 	int activeRed = 0;
 	int activeBlue = 0;
-	Scene::Drawable *redBalls[32];
-	Scene::Drawable *blueBalls[32];
+	std::vector<Scene::Drawable *> redBalls;
+	std::vector<Scene::Drawable *> blueBalls;
 
 };
