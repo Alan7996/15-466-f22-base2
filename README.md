@@ -2,7 +2,7 @@
 
 Author: Alan Lee / soohyun3
 
-Design: This is Connect 4!(factorial) ! This is a reimagination of Connect (4) in (3) dimensions with (2) people and (1) winner!
+Design: This is Connect 4!(factorial) ! This is a reimagination of Connect (4) in (3) dimensions with (2) people and (1) computer!
 
 Screen Shot:
 
