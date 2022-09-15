@@ -104,6 +104,11 @@ void PlayMode::place_ball(uint8_t x, uint8_t y) {
 			}
 		}
 	}
+	check_win();
+}
+
+void PlayMode::check_win() {
+
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -300,15 +305,15 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
 
-		// constexpr float H = 0.09f;
-		// lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
-		// 	glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
-		// 	glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-		// 	glm::u8vec4(0x00, 0x00, 0x00, 0x00));
-		// float ofs = 2.0f / drawable_size.y;
-		// lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
-		// 	glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
-		// 	glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
-		// 	glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+		constexpr float H = 0.09f;
+		lines.draw_text("Mouse motion rotates camera; SPACE resets camera rotation; WASD moves; QE goes down/up",
+			glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
+			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+			glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+		float ofs = 2.0f / drawable_size.y;
+		lines.draw_text("Mouse motion rotates camera; SPACE resets camera rotation; WASD moves; QE goes down/up",
+			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
+			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
 	}
 }

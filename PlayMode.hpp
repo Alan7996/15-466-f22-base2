@@ -16,7 +16,8 @@ struct PlayMode : Mode {
 	virtual void update(float elapsed) override;
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
-	void place_ball(uint8_t x, uint8_t y) ;
+	void place_ball(uint8_t x, uint8_t y);
+	void check_win();
 
 	//----- game state -----
 
