@@ -17,7 +17,7 @@ struct PlayMode : Mode {
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
 	void place_ball(uint8_t x, uint8_t y);
-	int PlayMode::check_win(int x, int y, int z, int player);
+	int check_win(int x, int y, int z, int player);
 
 	//----- game state -----
 	enum GameState {
